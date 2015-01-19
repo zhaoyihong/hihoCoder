@@ -78,17 +78,21 @@ bbabbaab
 
 ************************************************************************/
 
-#include<iostream>
+#include  <iostream>
+#include  <cassert>
+#include  <string>
 using namespace std;
+
+//#define DEBUG
 
 
 struct trie_node
 {
     static const int letter_num = 26;
     trie_node* pchild[letter_num];
-    bool is_terminal;
+    int cnt; //单词个数
     char letter;
-    trie_node():is_terminal(false),letter('*')
+    trie_node():letter('*'),cnt(0)
     {
         for(int i=0;i<letter_num;++i)
         {
@@ -103,7 +107,6 @@ public:
     trie_tree()
     {
         root = new trie_node();
-        root->is_terminal = true;
     }
 
     ~trie_tree()
@@ -111,39 +114,53 @@ public:
         delete_trie(root);
     }
 
-    bool insert(const char *word)
+    void insert(const char *word)
     {
        trie_node *pn = root;
        const char *pw = word;
-      
-        //先寻找树中已有的单词的部分
-        while(pn->pchild[*pw-'a']!=NULL)
-        {
-            ++pw;
-            pn=pn->pchild[*pw-'a'];
-        }
 
-        //树中已经有此单词,退出
-        if(*pw == '\0')
-        {
-            return false;
-        }
-
-        //将单词在树中不存在的部分插入
+        assert((*pw >='a' && *pw <='z') || *pw == '\0');
+    
         while(*pw != '\0')
         {
-            pn->pchild[*pw-'a'] = new trie_node();
-            if(pn->is_terminal)
+            if(pn->pchild[*pw-'a'] == NULL)
             {
-                pn->is_terminal = false;
+                pn->pchild[*pw-'a'] = new trie_node();
             }
 
-            pn = pn->pchild[*pw-'a'];
-            pn->is_terminal = true;
-            ++pw;
-        }
+            pn=pn->pchild[*pw-'a']; //pn指向包含当前字母的结点
+            pn->cnt ++;             //单词包含这个结点,就将这个结点的计数+1,后面计算有多少个
+            //以某字符串开头的单词数量,直接取出该字符串最后一个结点的数量就可以了
+            ++pw;                   //pw指向下一个字母 
+            assert((*pw >='a' && *pw <='z') || *pw == '\0');
+        }            
+    }
 
-        return true;
+
+    //得到头部相同的单词的个数
+    int get_same_head_count(const char *str)
+    {
+        const char *pw = str;
+        trie_node *pn = root;
+        
+        assert((*pw >='a' && *pw <='z') || *pw == '\0');
+        
+        //先寻找树中已有的单词的部分,如果树中包含这个词,才可以计算个数,否则返回0
+        while(*pw != '\0' && pn->pchild[*pw-'a']!=NULL)
+        {
+            pn=pn->pchild[*pw-'a']; //pn指向包含当前字母的结点
+            ++pw;                   //pw指向下一个字母
+            
+            if(*pw == '\0')
+            {
+                return pn->cnt;
+            }
+            
+            assert((*pw >='a' && *pw <='z') || *pw == '\0');
+        }
+    
+        return 0;
+    
     }
 
 private:
@@ -162,15 +179,29 @@ private:
 
         delete ptree;
     }
+    
 };
 
 
 int main(void)
 {
     trie_tree tree;
-    cout << tree.insert("hello") << endl;
-    cout << tree.insert("hello") << endl;
-    cout << tree.insert("hello") << endl;
+    int input_num;
+    string str;
+
+    cin >> input_num;
+    for(int i=0;i<input_num;++i)
+    {
+        cin >> str;
+        tree.insert(str.c_str());
+    }
+    
+    cin >> input_num;
+    for(int i=0;i<input_num;++i)
+    {
+        cin >> str;
+        cout << tree.get_same_head_count(str.c_str()) << endl;
+    }
 
     return 0;
 }
